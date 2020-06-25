@@ -1,0 +1,9 @@
+*.pdb
+*.ilk
+*.exe
+*.cso
+*.ipdb
+*.iobj
+*.user
+/VisualStudio/.vs
+/VisualStudio/x64
