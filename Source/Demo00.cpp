@@ -89,5 +89,5 @@ void mzDeinit(mzDemo00* Demo)
 
 	mzWaitForGpu(Demo->Dx);
 	mzReleasePipeline(Demo->Dx, Demo->Pso);
-	mzDestroy(Demo->Dx);
+	mzDestroyDxContext(Demo->Dx);
 }

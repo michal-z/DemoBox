@@ -1,5 +1,6 @@
 #include "Pch.h"
 #include "Library.h"
+#include <dxcapi.h>
 
 std::vector<u8> mzLoadFile(const char* Name)
 {
@@ -107,4 +108,101 @@ HWND mzCreateWindow(const char* Name, u32 Width, u32 Height)
 
 	assert(Window);
 	return Window;
+}
+
+#pragma comment(lib, "dxcompiler.lib")
+
+struct mzShaderCompiler
+{
+	IDxcLibrary* Library;
+	IDxcCompiler* Compiler;
+};
+
+mzShaderCompiler* mzCreateShaderCompiler()
+{
+	IDxcLibrary* Library;
+	HRESULT Result = DxcCreateInstance(CLSID_DxcLibrary, IID_PPV_ARGS(&Library));
+	if (FAILED(Result))
+	{
+		return nullptr;
+	}
+
+	IDxcCompiler* Compiler;
+	Result = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&Compiler));
+	if (FAILED(Result))
+	{
+		mzSafeRelease(Library);
+		return nullptr;
+	}
+
+	return new mzShaderCompiler{ Library, Compiler };
+}
+
+void mzDestroyShaderCompiler(mzShaderCompiler* Compiler)
+{
+	assert(Compiler && Compiler->Library && Compiler->Compiler);
+
+	mzSafeRelease(Compiler->Compiler);
+	mzSafeRelease(Compiler->Library);
+
+	delete Compiler;
+}
+
+std::vector<u8> mzCompileShaderFromFile(mzShaderCompiler* Compiler, const char* InSourceFile, const char* InEntryPoint, const char* InTargetProfile)
+{
+	assert(Compiler && Compiler->Library && Compiler->Compiler);
+
+	wchar_t SourceFile[MAX_PATH];
+	wchar_t EntryPoint[MAX_PATH];
+	wchar_t TargetProfile[32];
+	mbstowcs(SourceFile, InSourceFile, ARRAYSIZE(SourceFile));
+	mbstowcs(EntryPoint, InEntryPoint, ARRAYSIZE(EntryPoint));
+	mbstowcs(TargetProfile, InTargetProfile, ARRAYSIZE(TargetProfile));
+
+	u32 CodePage = CP_UTF8;
+	IDxcBlobEncoding* SourceBlob;
+	HRESULT Result = Compiler->Library->CreateBlobFromFile(SourceFile, &CodePage, &SourceBlob);
+	if (FAILED(Result))
+	{
+		return std::vector<u8>();
+	}
+
+	IDxcOperationResult* CompilationResult;
+	Result = Compiler->Compiler->Compile(SourceBlob, SourceFile, EntryPoint, TargetProfile, nullptr, 0, nullptr, 0, nullptr, &CompilationResult);
+
+	if (SUCCEEDED(Result))
+	{
+		CompilationResult->GetStatus(&Result);
+	}
+
+	if (FAILED(Result))
+	{
+		if (CompilationResult)
+		{
+			IDxcBlobEncoding* ErrorBlob;
+			Result = CompilationResult->GetErrorBuffer(&ErrorBlob);
+			if (SUCCEEDED(Result) && ErrorBlob)
+			{
+				char Message[512];
+				snprintf(Message, sizeof(Message), "Compilation failed with errors:\n%s\n", (const char*)ErrorBlob->GetBufferPointer());
+				OutputDebugStringA(Message);
+			}
+			mzSafeRelease(ErrorBlob);
+			mzSafeRelease(CompilationResult);
+		}
+
+		mzSafeRelease(SourceBlob);
+		return std::vector<u8>();
+	}
+	assert(CompilationResult);
+
+	IDxcBlob* BytecodeBlob;
+	CompilationResult->GetResult(&BytecodeBlob);
+
+	std::vector<u8> Bytecode((u8*)BytecodeBlob->GetBufferPointer(), (u8*)BytecodeBlob->GetBufferPointer() + BytecodeBlob->GetBufferSize());
+
+	mzSafeRelease(SourceBlob);
+	mzSafeRelease(BytecodeBlob);
+
+	return Bytecode;
 }

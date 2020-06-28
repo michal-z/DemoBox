@@ -3,6 +3,10 @@
 #include "Library.h"
 #include "meow_hash_x64_aesni.h"
 
+#pragma comment(lib, "d3d12.lib")
+#pragma comment(lib, "dxguid.lib")
+#pragma comment(lib, "dxgi.lib")
+
 #define _mzMaxNumResources 256
 #define _mzMaxNumPipelines 128
 #define _mzNumBufferedFrames 2
@@ -411,10 +415,21 @@ mzDxPipelineState* mzCreateGraphicsPipeline(mzDxContext* Dx, D3D12_GRAPHICS_PIPE
 		PsBytecode = mzLoadFile(Path);
 	}
 
-	PsoDesc->VS.pShaderBytecode = VsBytecode.data();
-	PsoDesc->VS.BytecodeLength = VsBytecode.size();
-	PsoDesc->PS.pShaderBytecode = PsBytecode.data();
-	PsoDesc->PS.BytecodeLength = PsBytecode.size();
+	return mzCreateGraphicsPipeline(Dx, PsoDesc, &VsBytecode, &PsBytecode);
+}
+
+mzDxPipelineState* mzCreateGraphicsPipeline(
+	mzDxContext* Dx,
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC* PsoDesc,
+	const std::vector<u8>* VsBytecode,
+	const std::vector<u8>* PsBytecode)
+{
+	assert(Dx && PsoDesc && VsBytecode && PsBytecode);
+
+	PsoDesc->VS.pShaderBytecode = VsBytecode->data();
+	PsoDesc->VS.BytecodeLength = VsBytecode->size();
+	PsoDesc->PS.pShaderBytecode = PsBytecode->data();
+	PsoDesc->PS.BytecodeLength = PsBytecode->size();
 
 	const u64 Hash = _mzGetGraphicsPipelineHash(PsoDesc);
 	auto Found = Dx->PipelinePool.Map.find(Hash);
@@ -427,7 +442,7 @@ mzDxPipelineState* mzCreateGraphicsPipeline(mzDxContext* Dx, D3D12_GRAPHICS_PIPE
 	}
 
 	ID3D12RootSignature* RootSignature = nullptr;
-	mzV(Dx->Device->CreateRootSignature(0, VsBytecode.data(), VsBytecode.size(), IID_PPV_ARGS(&RootSignature)));
+	mzV(Dx->Device->CreateRootSignature(0, VsBytecode->data(), VsBytecode->size(), IID_PPV_ARGS(&RootSignature)));
 
 	ID3D12PipelineState* Pso = nullptr;
 	mzV(Dx->Device->CreateGraphicsPipelineState(PsoDesc, IID_PPV_ARGS(&Pso)));
@@ -450,8 +465,15 @@ mzDxPipelineState* mzCreateComputePipeline(mzDxContext* Dx, D3D12_COMPUTE_PIPELI
 		CsBytecode = mzLoadFile(Path);
 	}
 
-	PsoDesc->CS.pShaderBytecode = CsBytecode.data();
-	PsoDesc->CS.BytecodeLength = CsBytecode.size();
+	return mzCreateComputePipeline(Dx, PsoDesc, &CsBytecode);
+}
+
+mzDxPipelineState* mzCreateComputePipeline(mzDxContext* Dx, D3D12_COMPUTE_PIPELINE_STATE_DESC* PsoDesc, const std::vector<u8>* CsBytecode)
+{
+	assert(Dx && PsoDesc && CsBytecode);
+
+	PsoDesc->CS.pShaderBytecode = CsBytecode->data();
+	PsoDesc->CS.BytecodeLength = CsBytecode->size();
 
 	const u64 Hash = _mzGetComputePipelineHash(PsoDesc);
 	auto Found = Dx->PipelinePool.Map.find(Hash);
@@ -464,7 +486,7 @@ mzDxPipelineState* mzCreateComputePipeline(mzDxContext* Dx, D3D12_COMPUTE_PIPELI
 	}
 
 	ID3D12RootSignature* RootSignature = nullptr;
-	mzV(Dx->Device->CreateRootSignature(0, CsBytecode.data(), CsBytecode.size(), IID_PPV_ARGS(&RootSignature)));
+	mzV(Dx->Device->CreateRootSignature(0, CsBytecode->data(), CsBytecode->size(), IID_PPV_ARGS(&RootSignature)));
 
 	ID3D12PipelineState* Pso = nullptr;
 	mzV(Dx->Device->CreateComputePipelineState(PsoDesc, IID_PPV_ARGS(&Pso)));
@@ -624,7 +646,7 @@ mzDxContext* mzCreateDxContext(HWND Window)
 	return &Dx;
 }
 
-void mzDestroy(mzDxContext* Dx)
+void mzDestroyDxContext(mzDxContext* Dx)
 {
 	assert(Dx);
 

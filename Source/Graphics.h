@@ -5,7 +5,7 @@ struct mzDxResource;
 struct mzDxPipelineState;
 
 mzDxContext* mzCreateDxContext(HWND Window);
-void mzDestroy(mzDxContext* Dx);
+void mzDestroyDxContext(mzDxContext* Dx);
 ID3D12GraphicsCommandList* mzBeginFrame(mzDxContext* Dx);
 void mzEndFrame(mzDxContext* Dx, u32 SwapInterval);
 void mzWaitForGpu(mzDxContext* Dx);
@@ -22,7 +22,13 @@ u32 mzReleaseResource(mzDxContext* Dx, mzDxResource* InResource);
 ID3D12Resource* mzGetRawResource(mzDxContext* Dx, mzDxResource* Resource);
 
 mzDxPipelineState* mzCreateGraphicsPipeline(mzDxContext* Dx, D3D12_GRAPHICS_PIPELINE_STATE_DESC* PsoDesc, const char* VsName, const char* PsName);
+mzDxPipelineState* mzCreateGraphicsPipeline(
+	mzDxContext* Dx,
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC* PsoDesc,
+	const std::vector<u8>* VsBytecode,
+	const std::vector<u8>* PsBytecode);
 mzDxPipelineState* mzCreateComputePipeline(mzDxContext* Dx, D3D12_COMPUTE_PIPELINE_STATE_DESC* PsoDesc, const char* CsName);
+mzDxPipelineState* mzCreateComputePipeline(mzDxContext* Dx, D3D12_COMPUTE_PIPELINE_STATE_DESC* PsoDesc, const std::vector<u8>* CsBytecode);
 u32 mzReleasePipeline(mzDxContext* Dx, mzDxPipelineState* Pipeline);
 
 void mzGetBackBuffer(mzDxContext* Dx, mzDxResource** OutResource, D3D12_CPU_DESCRIPTOR_HANDLE* OutRtv);
