@@ -168,7 +168,19 @@ std::vector<u8> mzCompileShaderFromFile(mzShaderCompiler* Compiler, const char* 
 	}
 
 	IDxcOperationResult* CompilationResult;
-	Result = Compiler->Compiler->Compile(SourceBlob, SourceFile, EntryPoint, TargetProfile, nullptr, 0, nullptr, 0, nullptr, &CompilationResult);
+#ifdef _DEBUG
+	const wchar_t* Arguments[] = { L"/Ges", L"/Zi", L"/Od" };
+#else
+	const wchar_t* Arguments[] = { L"/Ges" };
+#endif
+	Result = Compiler->Compiler->Compile(
+		SourceBlob,
+		SourceFile,
+		EntryPoint,
+		TargetProfile,
+		Arguments, ARRAYSIZE(Arguments),
+		nullptr, 0, nullptr,
+		&CompilationResult);
 
 	if (SUCCEEDED(Result))
 	{
