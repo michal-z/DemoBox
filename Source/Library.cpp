@@ -150,7 +150,7 @@ void mzDestroyShaderCompiler(mzShaderCompiler* Compiler)
 
 std::vector<u8> mzCompileShaderFromFile(mzShaderCompiler* Compiler, const char* InSourceFile, const char* InEntryPoint, const char* InTargetProfile)
 {
-	assert(Compiler && Compiler->Library && Compiler->Compiler);
+	assert(Compiler && Compiler->Library && Compiler->Compiler && InSourceFile && InEntryPoint && InTargetProfile);
 
 	wchar_t SourceFile[MAX_PATH];
 	wchar_t EntryPoint[MAX_PATH];
